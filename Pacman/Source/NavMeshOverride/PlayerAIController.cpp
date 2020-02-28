@@ -9,16 +9,19 @@
 #include "GameFramework/Controller.h"
 #include "GameFramework/Pawn.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Math/NumericLimits.h"
+#include "Graph.h"
 
 #pragma optimize("", off)
+
 
 void APackmanAIController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (Targets && Targets->Num())
+	if (Targets.Num())
 	{
-		SetNewMoveDestination((*Targets)[0]->GetActorLocation());
+		SetNewMoveDestination(Targets[0]->GetActorLocation());
 
 	}
 
@@ -29,7 +32,6 @@ void APackmanAIController::Tick(float DeltaTime)
 	TargetRotator.Pitch = 0.f;
 	TargetRotator.Roll = 0.f;
 	GetPawn()->SetActorRotation(TargetRotator);
-	//FaceRotation(TargetRotator, 0.f);
 
 }
 
@@ -52,40 +54,19 @@ void APackmanAIController::SetNewMoveDestination(const FVector DestLocation)
 	}
 }
 
-void APackmanAIController::BeginPlay()
+void APackmanAIController::RunBFS()
 {
-	Super::BeginPlay();
-	
 	ANavMeshOverrideGameMode* GM = Cast<ANavMeshOverrideGameMode>(GetWorld()->GetAuthGameMode());
 	if (!GM || !GM->CoinsToCollect.Num())
 	{
 		return;
 	}
 
-	Targets = &(GM->CoinsToCollect);
+	UGraph* G = GM->GenerateGraphFromLevel();
+	Targets = UGraph::BFS(G, GetPawn(), GM->GetTarget());
+}
 
-	//Find optimal path
-	if (Targets->Num())
-	{
-		UE_LOG(LogTemp, Error, TEXT("Was found %i actors"), Targets->Num());
-
-		//Initialize graph
-		for (int i = 0; i < GM->CoinsToCollect.Num() + 1; i++)
-		{
-			TArray<float> Temp;
-			Temp.Init(0.f, Targets->Num() + 1);
-			CoinsGraph.Init(Temp, Targets->Num() + 1);
-
-		}
-		for (int i = 0; i < Targets->Num() + 1; i++)
-		{
-			for (int j = 0; j < Targets->Num() + 1; j++)
-			{
-				if (i == 0)
-					i++;
-				//Setup weights
-
-			}
-		}
-	}
+void APackmanAIController::BeginPlay()
+{
+	Super::BeginPlay();
 }

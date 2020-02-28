@@ -26,6 +26,9 @@ ACoin::ACoin()
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
 	MeshComponent->SetupAttachment(CollisionComponent);
 
+	bIsTarget = false;
+	bWasTarget = false;
+
 }
 
 // Called when the game starts or when spawned
@@ -46,3 +49,17 @@ void ACoin::NotifyActorBeginOverlap(AActor* OtherActor)
 {
 }
 
+void ACoin::OnConstruction(const FTransform& Transform)
+{
+	if (!bWasTarget && bIsTarget)
+	{
+		TempMaterial = MeshComponent->GetMaterial(0);
+		MeshComponent->SetMaterial(0, TargetMaterial);
+		bWasTarget = true;
+	}
+	else if(bWasTarget && !bIsTarget)
+	{
+		MeshComponent->SetMaterial(0, TempMaterial);
+		bWasTarget = false;
+	}
+}

@@ -49,7 +49,9 @@ void APacman::NotifyActorBeginOverlap(AActor* OtherActor)
 		ANavMeshOverrideGameMode* GM = Cast<ANavMeshOverrideGameMode>(GetWorld()->GetAuthGameMode());
 		if (GM)
 		{
-			GM->CoinsToCollect.Remove(OtherActor);
+			GM->CoinsToCollect.Remove(Cast<ACoin>(OtherActor));
+			OtherActor->Destroy();
+			OtherActor = nullptr;
 		}
 	}
 }

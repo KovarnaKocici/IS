@@ -7,9 +7,6 @@
 #include "Coin.h"
 #include "PlayerAIController.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class NAVMESHOVERRIDE_API APackmanAIController : public AAIController
 {
@@ -18,14 +15,16 @@ class NAVMESHOVERRIDE_API APackmanAIController : public AAIController
 public:
 	virtual void Tick(float DeltaTime) override;
 
-
 	virtual void Possess(APawn* InPawn) override;
 
 	void SetNewMoveDestination(const FVector DestLocation);
 
+	UFUNCTION(BlueprintCallable)
+	void RunBFS();
+
 private:
-	TArray<AActor*>* Targets;
-	TArray<TArray<float>> CoinsGraph;
+	TArray<float> Path;
+	TArray<AActor*> Targets;
 protected:
 	virtual void BeginPlay() override;
 

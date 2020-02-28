@@ -11,6 +11,9 @@ class NAVMESHOVERRIDE_API ACoin : public AActor
 {
 	GENERATED_BODY()
 	
+private:
+	UMaterialInterface* TempMaterial;
+	bool bWasTarget;
 public:	
 	// Sets default values for this actor's properties
 	ACoin();
@@ -24,6 +27,12 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "Mesh")
 	UStaticMeshComponent* MeshComponent;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Mesh")
+	UMaterialInterface* TargetMaterial;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Graph")
+	bool bIsTarget;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -34,5 +43,8 @@ public:
 
 	UFUNCTION()
 	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
+
+	virtual void OnConstruction(const FTransform& Transform) override;
+
 
 };

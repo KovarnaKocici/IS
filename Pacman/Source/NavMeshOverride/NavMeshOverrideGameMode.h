@@ -13,9 +13,19 @@ class ANavMeshOverrideGameMode : public AGameModeBase
 
 public:
 	ANavMeshOverrideGameMode();
-	TArray<AActor*> CoinsToCollect;
+	
+	UPROPERTY()
+	TArray<class ACoin*> CoinsToCollect;
+
+	class UGraph* GenerateGraphFromLevel();
+
+	AActor* GetTarget();
+
 protected:
 	virtual void BeginPlay() override;
+
+	UPROPERTY( BlueprintReadWrite, /*, meta = (UIMin = '0.0', UIMax = '1.0'),*/ Category = "Graph")
+	float Density = 0.5f;
 
 };
 
