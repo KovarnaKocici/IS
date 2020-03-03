@@ -15,15 +15,15 @@
 #pragma optimize("", off)
 
 
-void APackmanAIController::Tick(float DeltaTime)
+void APlayerAIController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (Targets.Num())
-	{
-		SetNewMoveDestination(Targets[0]->GetActorLocation());
+	//if (Targets.Num())
+	//{
+	//	SetNewMoveDestination(Targets[0]->GetActorLocation());
 
-	}
+	//}
 
 	// Apply change in rotation 
 	FVector velocity = (GetPawn()->GetVelocity());
@@ -35,12 +35,12 @@ void APackmanAIController::Tick(float DeltaTime)
 
 }
 
-void APackmanAIController::Possess(APawn* InPawn)
+void APlayerAIController::Possess(APawn* InPawn)
 {
 	Super::Possess(InPawn);
 }
 
-void APackmanAIController::SetNewMoveDestination(const FVector DestLocation)
+void APlayerAIController::SetNewMoveDestination(const FVector DestLocation)
 {
 	APawn* const MyPawn = GetPawn();
 	if (MyPawn)
@@ -54,7 +54,7 @@ void APackmanAIController::SetNewMoveDestination(const FVector DestLocation)
 	}
 }
 
-void APackmanAIController::RunBFS()
+void APlayerAIController::RunBFS()
 {
 	ANavMeshOverrideGameMode* GM = Cast<ANavMeshOverrideGameMode>(GetWorld()->GetAuthGameMode());
 	if (!GM || !GM->CoinsToCollect.Num())
@@ -63,10 +63,32 @@ void APackmanAIController::RunBFS()
 	}
 
 	UGraph* G = GM->GenerateGraphFromLevel();
-	Targets = UGraph::BFS(G, GetPawn(), GM->GetTarget());
+
+	if (GetPawn() && GM->GetTarget())
+	{
+		Targets = G->BFS(GetPawn(), GM->GetTarget());
+	}
+
 }
 
-void APackmanAIController::BeginPlay()
+void APlayerAIController::RunDFS()
+{
+	ANavMeshOverrideGameMode* GM = Cast<ANavMeshOverrideGameMode>(GetWorld()->GetAuthGameMode());
+	if (!GM || !GM->CoinsToCollect.Num())
+	{
+		return;
+	}
+
+
+	UGraph* G = GM->GenerateGraphFromLevel();
+
+	if (GetPawn() && GM->GetTarget())
+	{
+		Targets = G->DFS(GetPawn(), GM->GetTarget());
+	}
+}
+
+void APlayerAIController::BeginPlay()
 {
 	Super::BeginPlay();
 }

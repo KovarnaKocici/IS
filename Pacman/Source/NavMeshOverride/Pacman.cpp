@@ -50,8 +50,7 @@ void APacman::NotifyActorBeginOverlap(AActor* OtherActor)
 		if (GM)
 		{
 			GM->CoinsToCollect.Remove(Cast<ACoin>(OtherActor));
-			OtherActor->Destroy();
-			OtherActor = nullptr;
+			OtherActor->SetActorHiddenInGame(true);
 		}
 	}
 }

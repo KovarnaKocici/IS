@@ -26,7 +26,7 @@ UGraph* ANavMeshOverrideGameMode::GenerateGraphFromLevel()
 	}
 
 	//Initialize Graph
-	TArray<AActor*> Edges;
+	TArray<AActor*> Vertexes;
 
 	//Random Relations are generated with certain probability
 	UGraph* G = NewObject<UGraph>();
@@ -39,22 +39,28 @@ UGraph* ANavMeshOverrideGameMode::GenerateGraphFromLevel()
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), classToFind, Players);
 	if (Players.Num())
 	{
-		Edges.Add(Cast<AActor>(Players[0]));
+		Vertexes.Add(Cast<AActor>(Players[0]));
 	}
 
 	for (auto Coin : CoinsToCollect)
 	{
-		Edges.Add(Cast<AActor>(Coin));
-		G->AddNode(Edges.Last(0));
+		Vertexes.Add(Cast<AActor>(Coin));
+		G->AddNode(Vertexes.Last(0));
 	}
 
-	for (auto ActorL : Edges)
+
+	TArray<AActor*> NearestCoins;
+
+	for (auto ActorL : Vertexes)
 	{
-		for (auto ActorR : Edges)
+		ActorL->GetOverlappingActors(NearestCoins, ACoin::StaticClass());
+
+		for (auto ActorR : NearestCoins)
 		{
-			if (FMath::RandRange(0.f, 1.f) < Density)
+			if (ActorL != ActorR /*&& FMath::RandRange(0.f, 1.f) < GraphDensity*/)
 			{
 				G->AddRelation(ActorL, ActorR);
+				G->AddRelation(ActorR, ActorL);
 				DrawDebugLine(GetWorld(), ActorL->GetActorLocation(), ActorR->GetActorLocation(), FColor::White, true, 0.f);
 			}
 		}

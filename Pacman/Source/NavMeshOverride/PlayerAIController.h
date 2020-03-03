@@ -8,23 +8,30 @@
 #include "PlayerAIController.generated.h"
 
 UCLASS()
-class NAVMESHOVERRIDE_API APackmanAIController : public AAIController
+class NAVMESHOVERRIDE_API APlayerAIController : public AAIController
 {
 	GENERATED_BODY()
 	
 public:
+	UPROPERTY(BlueprintReadWrite)
+	TArray<AActor*> Targets;
+
 	virtual void Tick(float DeltaTime) override;
 
 	virtual void Possess(APawn* InPawn) override;
 
+	UFUNCTION(BlueprintCallable)
 	void SetNewMoveDestination(const FVector DestLocation);
 
 	UFUNCTION(BlueprintCallable)
 	void RunBFS();
 
+	UFUNCTION(BlueprintCallable)
+	void RunDFS();
+
 private:
 	TArray<float> Path;
-	TArray<AActor*> Targets;
+
 protected:
 	virtual void BeginPlay() override;
 

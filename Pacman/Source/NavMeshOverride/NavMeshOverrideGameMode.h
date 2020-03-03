@@ -25,7 +25,10 @@ protected:
 	virtual void BeginPlay() override;
 
 	UPROPERTY( BlueprintReadWrite, /*, meta = (UIMin = '0.0', UIMax = '1.0'),*/ Category = "Graph")
-	float Density = 0.5f;
+	float GraphDensity = 0.5f;
+
+	//UPROPERTY(BlueprintReadWrite, /*, meta = (UIMin = '0.0', UIMax = '1.0'),*/ Category = "Graph")
+	//float GraphDrawSpeed = 1.f;
 
 };
 
