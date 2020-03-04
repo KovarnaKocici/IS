@@ -25,14 +25,6 @@ void APlayerAIController::Tick(float DeltaTime)
 
 	//}
 
-	// Apply change in rotation 
-	FVector velocity = (GetPawn()->GetVelocity());
-	velocity.Normalize();
-	FRotator TargetRotator = UKismetMathLibrary::FindLookAtRotation(GetPawn()->GetActorLocation(), GetPawn()->GetActorLocation()+velocity);
-	TargetRotator.Pitch = 0.f;
-	TargetRotator.Roll = 0.f;
-	GetPawn()->SetActorRotation(TargetRotator);
-
 }
 
 void APlayerAIController::Possess(APawn* InPawn)

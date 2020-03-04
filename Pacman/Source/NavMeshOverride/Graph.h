@@ -22,6 +22,7 @@ struct NAVMESHOVERRIDE_API FGNode
 	UPROPERTY()
 	AActor* Vertex;
 
+	FGNode* CameFrom;
 	TArray<FGNode*> ConnectedNodes;
 };
 
@@ -39,15 +40,15 @@ public:
 	FGNode* AddNode(AActor* Vertex);
 	void AddRelation(FGNode* NodeL, FGNode* NodeR);
 	void AddRelation(AActor* VertexL, AActor* VertexR);
-	void Visit(FGNode* Node);
+	void Visit(FGNode* Parent, FGNode* Child);
 	bool IsVertexInGraph(AActor* Vertex);
 	FGNode* GetNodeByVertex(AActor* Vertex);
+	TArray<AActor*> BacktrackPath(FGNode* Node);
 
 	UFUNCTION()
 	void DrawEdges(const FGNode From, const TArray<FGNode> To) const;
 
-	UFUNCTION()
-	void PrintPath(const TArray<AActor*> Path) const;
+	void PrintPath(const TArray<FGNode*> Path) const;
 
 	TArray<AActor*> DFS(AActor* Start, AActor* End);
 	TArray<AActor*> BFS(AActor* Start, AActor* End);

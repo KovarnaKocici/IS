@@ -4,6 +4,7 @@
 #include "GameFramework/PawnMovementComponent.h"
 #include "NavMeshOverrideGameMode.h"
 #include "Coin.h"
+#include "Kismet/KismetMathLibrary.h"
 
 #pragma optimize ("", off)
 // Sets default values
@@ -31,7 +32,17 @@ void APacman::BeginPlay()
 void APacman::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	GetMovementComponent()->GetActorFeetLocation();
+	// Apply change in rotation 
+
+	if (bLookAtMovement)
+	{
+		FVector velocity = (GetVelocity());
+		velocity.Normalize();
+		FRotator TargetRotator = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), GetActorLocation() + velocity);
+		TargetRotator.Pitch = 0.f;
+		TargetRotator.Roll = 0.f;
+		SetActorRotation(TargetRotator);
+	}
 }
 
 // Called to bind functionality to input
@@ -49,8 +60,8 @@ void APacman::NotifyActorBeginOverlap(AActor* OtherActor)
 		ANavMeshOverrideGameMode* GM = Cast<ANavMeshOverrideGameMode>(GetWorld()->GetAuthGameMode());
 		if (GM)
 		{
-			GM->CoinsToCollect.Remove(Cast<ACoin>(OtherActor));
-			OtherActor->SetActorHiddenInGame(true);
+			//GM->CoinsToCollect.Remove(Cast<ACoin>(OtherActor));
+			//OtherActor->SetActorHiddenInGame(true);
 		}
 	}
 }

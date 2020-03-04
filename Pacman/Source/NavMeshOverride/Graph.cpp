@@ -48,7 +48,7 @@ FGNode* UGraph::AddNode(AActor* Vertex)
 	if (!IsVertexInGraph(Vertex))
 	{
 		TArray<FGNode*> TNodes;
-		TNode = new FGNode{ false, Vertex, TNodes };
+		TNode = new FGNode{ false, Vertex, nullptr, TNodes };
 		Nodes.Add(TNode);
 	}
 	else
@@ -71,11 +71,12 @@ void UGraph::AddRelation(FGNode* NodeL, FGNode* NodeR)
 	NodeL->ConnectedNodes.AddUnique(NodeR);
 }
 
-void UGraph::Visit(FGNode* Node)
+void UGraph::Visit(FGNode* Parent, FGNode* Child)
 {
-	if(Node)
+	if(Child)
 	{
-		Node->bIsVisited = true;
+		Child->bIsVisited = true;
+		Child->CameFrom = Parent;
 	}
 }
 
@@ -103,6 +104,24 @@ FGNode* UGraph::GetNodeByVertex(AActor* Vertex)
 	return nullptr;
 }
 
+TArray<AActor*> UGraph::BacktrackPath(FGNode* Node)
+{
+	TArray<AActor*> Path;
+	if (Node)
+	{
+		Path.Add(Node->Vertex);
+		FGNode* TNode = Node->CameFrom;
+
+		while (TNode != nullptr)
+		{
+			Path.Add(TNode->Vertex);
+			TNode = TNode->CameFrom;
+		}
+	}
+
+	return Path;
+}
+
 void UGraph::DrawEdges(const FGNode From, const TArray<FGNode> To) const
 {
 	if (!To.Num())
@@ -123,7 +142,7 @@ void UGraph::DrawEdges(const FGNode From, const TArray<FGNode> To) const
 	}
 }
 
-void UGraph::PrintPath(const TArray<AActor*> Path) const
+void UGraph::PrintPath(const TArray<FGNode*> Path) const
 {
 	if (!Path.Num())
 	{
@@ -140,42 +159,41 @@ TArray<AActor*> UGraph::BFS( AActor* Start, AActor* End)
 	const float Delta = 0.2f;
 	float Delay = 1.f;
 
-	TArray<AActor*> Path;
+	TArray<FGNode*> FullPath;
 	TArray<FGNode*> Queue;
 	FGNode* StartNode = GetNodeByVertex(Start);
 
-	Visit(StartNode);
+	Visit(nullptr, StartNode);
 	Queue.Add(StartNode);
 
 	int i = 0;
 	while (Queue.Num())
 	{
 		StartNode = Queue[0];
-		Path.Add(StartNode->Vertex);
-		DrawDebugString(StartNode->Vertex->GetWorld(), StartNode->Vertex->GetActorLocation(), FString::Printf(TEXT("%i"), i), nullptr, FColor::White, -1.f, true);
-
+		FullPath.Add(StartNode);
 		Queue.RemoveAt(0);
-
-		if (StartNode->Vertex == End)
-		{
-			break;
-		}
+		
+		DrawDebugString(StartNode->Vertex->GetWorld(), StartNode->Vertex->GetActorLocation(), FString::Printf(TEXT("%i"), i), nullptr, FColor::White, -1.f, true);
 
 		FTimerHandle DrawTimerHandle;
 		FTimerDelegate DrawTimerDelegate;
 
 		DrawTimerDelegate.BindUFunction(this, FName(TEXT("DrawEdges")), *StartNode, GetNotVisitedNodes(StartNode));
 		StartNode->Vertex->GetWorld()->GetTimerManager().SetTimer(DrawTimerHandle, DrawTimerDelegate, Delay, false);
+		Delay += Delta;
+
+		if (StartNode->Vertex == End)
+		{
+			break;
+		}
 
 		if (StartNode->ConnectedNodes.Num()) 
 		{
 			for (auto Node : StartNode->ConnectedNodes)
 			{
-				Delay += Delta;
-
 				if (!Node->bIsVisited)
 				{
-					Visit(Node);
+					Visit(StartNode, Node);
 					Queue.Add(Node);
 				}
 			}
@@ -183,8 +201,9 @@ TArray<AActor*> UGraph::BFS( AActor* Start, AActor* End)
 
 		i++;
 	}
-	PrintPath(Path);
-	return Path;
+	PrintPath(FullPath);
+
+	return BacktrackPath(FullPath.Last());
 
 }
 
@@ -193,22 +212,28 @@ TArray< AActor*> UGraph::DFS(AActor* Start, AActor* End)
 	const float Delta = 0.2f;
 	float Delay = 1.f;
 
-	TArray<AActor*> FullPath;
-	TArray<AActor*> PathToTarget;
+	TArray<FGNode*> FullPath;
 	TArray<FGNode*> Stack;
 	FGNode* StartNode = GetNodeByVertex(Start);
 
-	Visit(StartNode);
+	Visit(nullptr, StartNode);
 	Stack.Add(StartNode);
-	PathToTarget.Add(StartNode->Vertex);
 
 	int i = 0;
 	while (Stack.Num())
 	{
 		StartNode = Stack.Last(0);
-		FullPath.Add(StartNode->Vertex);
-
+		FullPath.Add(StartNode);
 		Stack.RemoveAt(Stack.Num()-1);
+
+		DrawDebugString(StartNode->Vertex->GetWorld(), StartNode->Vertex->GetActorLocation(), FString::Printf(TEXT("%i"), i), nullptr, FColor::White, -1.f, true);
+
+		FTimerHandle DrawTimerHandle;
+		FTimerDelegate DrawTimerDelegate;
+
+		DrawTimerDelegate.BindUFunction(this, FName(TEXT("DrawEdges")), *StartNode, GetNotVisitedNodes(StartNode));
+		StartNode->Vertex->GetWorld()->GetTimerManager().SetTimer(DrawTimerHandle, DrawTimerDelegate, Delay, false);
+		Delay += Delta;
 
 		if (StartNode->Vertex == End)
 		{
@@ -217,30 +242,23 @@ TArray< AActor*> UGraph::DFS(AActor* Start, AActor* End)
 
 		if (StartNode->ConnectedNodes.Num())
 		{
-			bool AnyVisited = false;
 			for (auto Node : StartNode->ConnectedNodes)
 			{
+
 				if (!Node->bIsVisited)
 				{
-					Visit(Node);
+					Visit(StartNode, Node);
 
 					Stack.Add(Node);
-					FullPath.Add(Node->Vertex);
-					PathToTarget.Add(Node->Vertex);
-
-					AnyVisited = true;
-					break;
+					FullPath.Add(Node);
 				}
-			}
-			if (!AnyVisited)
-			{
-				PathToTarget.RemoveAt(PathToTarget.Num() - 1);
 			}
 		}
 
 		i++;
 	}
+
 	PrintPath(FullPath);
-	return PathToTarget;
+	return BacktrackPath(FullPath.Last());
 }
 

@@ -12,6 +12,9 @@ class NAVMESHOVERRIDE_API APacman : public ADefaultPawn
 	GENERATED_BODY()
 
 public:
+	UPROPERTY(BlueprintReadWrite)
+	bool bLookAtMovement = false;
+
 	// Sets default values for this pawn's properties
 	APacman();
 
