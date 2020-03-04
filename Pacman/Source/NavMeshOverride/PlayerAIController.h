@@ -24,6 +24,9 @@ public:
 	void SetNewMoveDestination(const FVector DestLocation);
 
 	UFUNCTION(BlueprintCallable)
+	void RunDijkstra();
+
+	UFUNCTION(BlueprintCallable)
 	void RunBFS();
 
 	UFUNCTION(BlueprintCallable)

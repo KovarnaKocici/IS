@@ -46,6 +46,11 @@ void APlayerAIController::SetNewMoveDestination(const FVector DestLocation)
 	}
 }
 
+void APlayerAIController::RunDijkstra()
+{
+
+}
+
 void APlayerAIController::RunBFS()
 {
 	ANavMeshOverrideGameMode* GM = Cast<ANavMeshOverrideGameMode>(GetWorld()->GetAuthGameMode());

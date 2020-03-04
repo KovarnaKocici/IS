@@ -6,6 +6,7 @@
 #include "Object.h"
 #include "TimerManager.h"
 #include "UObjectBase.h"
+#include "AI/Navigation/NavigationSystem.h"
 
 #pragma optimize("", off)
 
@@ -32,9 +33,9 @@ TArray<FGNode> UGraph::GetNotVisitedNodes(const FGNode* Node) const
 
 	for (auto ConnectedNode : Node->ConnectedNodes)
 	{
-		if (!ConnectedNode->bIsVisited)
+		if (!ConnectedNode->Connection->bIsVisited)
 		{
-			NotVisited.Add(*ConnectedNode);
+			NotVisited.Add(*(ConnectedNode->Connection));
 		}
 	}
 
@@ -47,8 +48,8 @@ FGNode* UGraph::AddNode(AActor* Vertex)
 
 	if (!IsVertexInGraph(Vertex))
 	{
-		TArray<FGNode*> TNodes;
-		TNode = new FGNode{ false, Vertex, nullptr, TNodes };
+		TArray<FGEdge*> TEdges;
+		TNode = new FGNode{ false, Vertex, nullptr, TEdges };
 		Nodes.Add(TNode);
 	}
 	else
@@ -60,7 +61,6 @@ FGNode* UGraph::AddNode(AActor* Vertex)
 
 void UGraph::AddRelation(AActor* VertexL, AActor* VertexR)
 {
-
 	FGNode* TNodeR = AddNode(VertexR);
 	FGNode* TNodeL = AddNode(VertexL);
 	AddRelation(TNodeL, TNodeR);
@@ -68,7 +68,14 @@ void UGraph::AddRelation(AActor* VertexL, AActor* VertexR)
 
 void UGraph::AddRelation(FGNode* NodeL, FGNode* NodeR)
 {
-	NodeL->ConnectedNodes.AddUnique(NodeR);
+	float Distance = 1.f;
+	UNavigationSystem* const NavSys = NodeL->Vertex->GetWorld()->GetNavigationSystem();
+	if (NavSys)
+	{
+		NavSys->GetPathLength(NodeL->Vertex->GetActorLocation(), NodeR->Vertex->GetActorLocation(), Distance);
+	}
+
+	NodeL->ConnectedNodes.AddUnique(new FGEdge{ NodeR, Distance });
 }
 
 void UGraph::Visit(FGNode* Parent, FGNode* Child)
@@ -154,6 +161,11 @@ void UGraph::PrintPath(const TArray<FGNode*> Path) const
 	//}
 }
 
+TArray<AActor*> UGraph::Dijkstra(AActor* Start)
+{
+
+}
+
 TArray<AActor*> UGraph::BFS( AActor* Start, AActor* End)
 {
 	const float Delta = 0.2f;
@@ -191,10 +203,10 @@ TArray<AActor*> UGraph::BFS( AActor* Start, AActor* End)
 		{
 			for (auto Node : StartNode->ConnectedNodes)
 			{
-				if (!Node->bIsVisited)
+				if (!Node->Connection->bIsVisited)
 				{
-					Visit(StartNode, Node);
-					Queue.Add(Node);
+					Visit(StartNode, Node->Connection);
+					Queue.Add(Node->Connection);
 				}
 			}
 		}
@@ -245,12 +257,12 @@ TArray< AActor*> UGraph::DFS(AActor* Start, AActor* End)
 			for (auto Node : StartNode->ConnectedNodes)
 			{
 
-				if (!Node->bIsVisited)
+				if (!Node->Connection->bIsVisited)
 				{
-					Visit(StartNode, Node);
+					Visit(StartNode, Node->Connection);
 
-					Stack.Add(Node);
-					FullPath.Add(Node);
+					Stack.Add(Node->Connection);
+					FullPath.Add(Node->Connection);
 				}
 			}
 		}
