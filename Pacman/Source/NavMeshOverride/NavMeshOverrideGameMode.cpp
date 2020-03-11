@@ -1,8 +1,6 @@
 // Copyright 1998-2018 Epic Games, Inc. All Rights Reserved.
 
 #include "NavMeshOverrideGameMode.h"
-#include "NavMeshOverridePlayerController.h"
-#include "NavMeshOverrideCharacter.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Kismet/GameplayStatics.h"
 #include "Coin.h"
@@ -44,6 +42,14 @@ TArray<AActor*> ANavMeshOverrideGameMode::GetTargets()
 		}
 	}
 	return Targets;
+}
+
+
+AActor* ANavMeshOverrideGameMode::GetCoin(AActor* Start)
+{	
+	TArray<AActor*> OverlappingCoins;
+	Start->GetOverlappingActors(OverlappingCoins, ACoin::StaticClass());
+	return OverlappingCoins.Num()? OverlappingCoins[0]: nullptr;
 }
 
 void ANavMeshOverrideGameMode::BeginPlay()

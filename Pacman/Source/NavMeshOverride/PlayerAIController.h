@@ -33,7 +33,7 @@ public:
 	void SetNewMoveDestination(const FVector DestLocation);
 
 	UFUNCTION(BlueprintCallable)
-	void RunPathfinder(EPathfinderEnum Method);
+		void RunPathfinder(EPathfinderEnum Method);
 
 private:
 	TArray<float> Path;

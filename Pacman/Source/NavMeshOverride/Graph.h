@@ -10,14 +10,9 @@
 /**
  * 
  */
-USTRUCT()
-struct NAVMESHOVERRIDE_API FGEdge
-{
-	GENERATED_BODY()
 
-	FGNode* Node = nullptr;
-	float EWeight = 0.f;
-};
+struct FGEdge;
+struct FGNode;
 
 USTRUCT()
 struct NAVMESHOVERRIDE_API FGNode
@@ -35,6 +30,14 @@ struct NAVMESHOVERRIDE_API FGNode
 	TArray<FGEdge*> ConnectedNodes;
 };
 
+USTRUCT()
+struct NAVMESHOVERRIDE_API FGEdge
+{
+	GENERATED_BODY()
+
+	FGNode* Node = nullptr;
+	float EWeight = 0.f;
+};
 
 UCLASS()
 class NAVMESHOVERRIDE_API AGraph : public AActor
@@ -42,7 +45,13 @@ class NAVMESHOVERRIDE_API AGraph : public AActor
 	GENERATED_BODY()
 	
 public:
+	UPROPERTY(BlueprintReadWrite)
+	float DeltaTime = 0.2f;
+	UPROPERTY(BlueprintReadWrite)
+	float DelayTime = 1.f;
+
 	AGraph(const FObjectInitializer& ObjectInitializer);
+	int GetSize() { return Nodes.Num(); }
 	void GenerateGraphFromLevel(bool bIncludeOnlyTargets = false);
 	FGEdge* GetEdge(FGNode* From, FGNode* To);
 	TArray<FGNode*> GetRelations() { return Nodes; }
@@ -58,6 +67,7 @@ public:
 
 	UFUNCTION()
 	void DrawEdges(const FGNode From, const TArray<FGNode> To) const;
+	void DrawGraphDebug(const FGNode* CurrentNode, const int& index);
 	void PrintPath(const TArray<FGNode*> Path) const;
 
 	TArray<AActor*> DFS(AActor* Start, AActor* End);

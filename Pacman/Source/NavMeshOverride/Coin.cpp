@@ -4,7 +4,6 @@
 #include "Materials/MaterialInstance.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SphereComponent.h"
-#include "NavMeshOverrideCharacter.h"
 #include "PlayerAIController.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Actor.h"

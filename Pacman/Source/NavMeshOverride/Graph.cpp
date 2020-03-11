@@ -35,17 +35,6 @@ void AGraph::GenerateGraphFromLevel(bool bIncludeOnlyTargets)
 	//Initialize Graph
 	TArray<AActor*> Vertexes;
 
-	//Fins all targets
-	//Find PlayerAI and add its pawn
-	TArray<AActor*> Players;
-	TSubclassOf<APacman> classToFind;
-	classToFind = APacman::StaticClass();
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), classToFind, Players);
-	if (Players.Num())
-	{
-		Vertexes.Add(Cast<AActor>(Players[0]));
-	}
-
 	for (auto Coin : GM->CoinsToCollect)
 	{
 		if (Coin->bIsTarget && bIncludeOnlyTargets)
@@ -214,6 +203,18 @@ TArray<AActor*> AGraph::BacktrackPath(FGNode* Node)
 	return Path;
 }
 
+void AGraph::DrawGraphDebug(const FGNode* CurrentNode, const int& index) 
+{
+	DrawDebugString(GetWorld(), CurrentNode->Vertex->GetActorLocation(), FString::Printf(TEXT("%i"), index), nullptr, FColor::White, -1.f, true);
+
+	FTimerHandle DrawTimerHandle;
+	FTimerDelegate DrawTimerDelegate;
+
+	DrawTimerDelegate.BindUFunction(this, FName(TEXT("DrawEdges")), *CurrentNode, GetNotVisitedNodes(CurrentNode));
+	GetWorld()->GetTimerManager().SetTimer(DrawTimerHandle, DrawTimerDelegate, DelayTime, false);
+	DelayTime += DeltaTime;
+}
+
 void AGraph::DrawEdges(const FGNode From, const TArray<FGNode> To) const
 {
 	if (!To.Num())
@@ -247,13 +248,15 @@ void AGraph::PrintPath(const TArray<FGNode*> Path) const
 }
 
 TArray<AActor*> AGraph::BFS( AActor* Start, AActor* End)
-{
-	const float Delta = 0.2f;
-	float Delay = 1.f;
-
+{	
 	TArray<FGNode*> FullPath;
 	TArray<FGNode*> Queue;
 	FGNode* CurrentNode = GetNodeByVertex(Start);
+
+	if (!Start || !CurrentNode)
+	{
+		return TArray<AActor*>();
+	}
 
 	Visit(nullptr, CurrentNode);
 	Queue.Add(CurrentNode);
@@ -265,14 +268,7 @@ TArray<AActor*> AGraph::BFS( AActor* Start, AActor* End)
 		FullPath.Add(CurrentNode);
 		Queue.RemoveAt(0);
 		
-		DrawDebugString(GetWorld(), CurrentNode->Vertex->GetActorLocation(), FString::Printf(TEXT("%i"), i), nullptr, FColor::White, -1.f, true);
-
-		FTimerHandle DrawTimerHandle;
-		FTimerDelegate DrawTimerDelegate;
-
-		DrawTimerDelegate.BindUFunction(this, FName(TEXT("DrawEdges")), *CurrentNode, GetNotVisitedNodes(CurrentNode));
-		GetWorld()->GetTimerManager().SetTimer(DrawTimerHandle, DrawTimerDelegate, Delay, false);
-		Delay += Delta;
+		DrawGraphDebug(CurrentNode, i);
 
 		if (CurrentNode->Vertex == End)
 		{
@@ -281,7 +277,7 @@ TArray<AActor*> AGraph::BFS( AActor* Start, AActor* End)
 
 		if (CurrentNode->ConnectedNodes.Num()) 
 		{
-			for (auto OutEdge : CurrentNode->ConnectedNodes)
+			for (auto &OutEdge : CurrentNode->ConnectedNodes)
 			{
 				if (!OutEdge->Node->bIsVisited)
 				{
@@ -299,14 +295,16 @@ TArray<AActor*> AGraph::BFS( AActor* Start, AActor* End)
 
 }
 
-TArray< AActor*> AGraph::DFS(AActor* Start, AActor* End)
+TArray<AActor*> AGraph::DFS(AActor* Start, AActor* End)
 {
-	const float Delta = 0.2f;
-	float Delay = 1.f;
-
 	TArray<FGNode*> FullPath;
 	TArray<FGNode*> Stack;
 	FGNode* CurrentNode = GetNodeByVertex(Start);
+
+	if (!Start || !CurrentNode)
+	{
+		return TArray<AActor*>();
+	}
 
 	Visit(nullptr, CurrentNode);
 	Stack.Add(CurrentNode);
@@ -318,14 +316,7 @@ TArray< AActor*> AGraph::DFS(AActor* Start, AActor* End)
 		FullPath.Add(CurrentNode);
 		Stack.RemoveAt(Stack.Num()-1);
 
-		DrawDebugString(CurrentNode->Vertex->GetWorld(), CurrentNode->Vertex->GetActorLocation(), FString::Printf(TEXT("%i"), i), nullptr, FColor::White, -1.f, true);
-
-		FTimerHandle DrawTimerHandle;
-		FTimerDelegate DrawTimerDelegate;
-
-		DrawTimerDelegate.BindUFunction(this, FName(TEXT("DrawEdges")), *CurrentNode, GetNotVisitedNodes(CurrentNode));
-		GetWorld()->GetTimerManager().SetTimer(DrawTimerHandle, DrawTimerDelegate, Delay, false);
-		Delay += Delta;
+		DrawGraphDebug(CurrentNode, i);
 
 		if (CurrentNode->Vertex == End)
 		{
@@ -334,7 +325,7 @@ TArray< AActor*> AGraph::DFS(AActor* Start, AActor* End)
 
 		if (CurrentNode->ConnectedNodes.Num())
 		{
-			for (auto OutEdge : CurrentNode->ConnectedNodes)
+			for (auto &OutEdge : CurrentNode->ConnectedNodes)
 			{
 				if (!OutEdge->Node->bIsVisited)
 				{
@@ -355,14 +346,15 @@ TArray< AActor*> AGraph::DFS(AActor* Start, AActor* End)
 
 TArray<AActor*> AGraph::Dijkstra(AActor* Start, AActor* End)
 {
-	const float Delta = 0.2f;
-	float Delay = 1.f;
-
 	TArray<FGNode*> FullPath;
 	TArray<FGNode*> PriorityQueue;
 	FGNode* CurrentNode = GetNodeByVertex(Start);
 
-	//Visit(nullptr, StartNode);
+	if (!Start || !CurrentNode)
+	{
+		return TArray<AActor*>();
+	}
+
 	PriorityQueue.Add(CurrentNode);
 	CurrentNode->VWeight = 0.f;
 
@@ -373,14 +365,7 @@ TArray<AActor*> AGraph::Dijkstra(AActor* Start, AActor* End)
 		FullPath.Add(CurrentNode);
 		PriorityQueue.RemoveAt(0);
 
-		DrawDebugString(GetWorld(), CurrentNode->Vertex->GetActorLocation(), FString::Printf(TEXT("%i"), i), nullptr, FColor::White, -1.f, true);
-
-		FTimerHandle DrawTimerHandle;
-		FTimerDelegate DrawTimerDelegate;
-
-		DrawTimerDelegate.BindUFunction(this, FName(TEXT("DrawEdges")), *CurrentNode, GetNotVisitedNodes(CurrentNode));
-		GetWorld()->GetTimerManager().SetTimer(DrawTimerHandle, DrawTimerDelegate, Delay, false);
-		Delay += Delta;
+		DrawGraphDebug(CurrentNode, i);
 
 		if (CurrentNode->Vertex == End)
 		{
@@ -390,11 +375,10 @@ TArray<AActor*> AGraph::Dijkstra(AActor* Start, AActor* End)
 		if (CurrentNode->ConnectedNodes.Num())
 		{
 			int NewWeight = 0.f;
-			for (auto OutEdge : CurrentNode->ConnectedNodes)
+			for (auto &OutEdge : CurrentNode->ConnectedNodes)
 			{
-				bool VisitNode = false;
 				NewWeight = CurrentNode->VWeight + GetEdge(CurrentNode, OutEdge->Node)->EWeight;
-				if (OutEdge->Node->VWeight == -1.f || NewWeight < OutEdge->EWeight)
+				if (!OutEdge->Node->bIsVisited && (OutEdge->Node->VWeight == -1.f || NewWeight < OutEdge->EWeight))
 				{
 					OutEdge->Node->VWeight = NewWeight;
 
@@ -434,14 +418,20 @@ TArray<AActor*> AGraph::Dijkstra(AActor* Start, AActor* End)
 
 TArray<AActor*> AGraph::AStar(AActor* Start, AActor* End)
 {
-	const float Delta = 0.2f;
-	float Delay = 1.f;
-
 	TArray<FGNode*> FullPath;
 	TArray<FGNode*> PriorityQueue;
 	FGNode* CurrentNode = GetNodeByVertex(Start);
 
-	//Visit(nullptr, StartNode);
+	if (!Start || !CurrentNode)
+	{
+		return TArray<AActor*>();
+	}
+
+	//Manhattan distance on a square grid
+	auto Heuristic = [](FVector A, FVector B) {
+		return FMath::Abs(A.X - B.X) + FMath::Abs(A.Y - B.Y);
+	};
+
 	PriorityQueue.Add(CurrentNode);
 	CurrentNode->VWeight = 0.f;
 
@@ -452,14 +442,7 @@ TArray<AActor*> AGraph::AStar(AActor* Start, AActor* End)
 		FullPath.Add(CurrentNode);
 		PriorityQueue.RemoveAt(0);
 
-		DrawDebugString(GetWorld(), CurrentNode->Vertex->GetActorLocation(), FString::Printf(TEXT("%i"), i), nullptr, FColor::White, -1.f, true);
-
-		FTimerHandle DrawTimerHandle;
-		FTimerDelegate DrawTimerDelegate;
-
-		DrawTimerDelegate.BindUFunction(this, FName(TEXT("DrawEdges")), *CurrentNode, GetNotVisitedNodes(CurrentNode));
-		GetWorld()->GetTimerManager().SetTimer(DrawTimerHandle, DrawTimerDelegate, Delay, false);
-		Delay += Delta;
+		DrawGraphDebug(CurrentNode, i);
 
 		if (CurrentNode->Vertex == End)
 		{
@@ -469,11 +452,10 @@ TArray<AActor*> AGraph::AStar(AActor* Start, AActor* End)
 		if (CurrentNode->ConnectedNodes.Num())
 		{
 			int NewWeight = 0.f;
-			for (auto OutEdge : CurrentNode->ConnectedNodes)
+			for (auto &OutEdge : CurrentNode->ConnectedNodes)
 			{
-				bool VisitNode = false;
-				NewWeight = CurrentNode->VWeight + GetEdge(CurrentNode, OutEdge->Node)->EWeight;
-				if (OutEdge->Node->VWeight == -1.f || NewWeight < OutEdge->EWeight)
+				NewWeight = Heuristic(CurrentNode->Vertex->GetActorLocation(), End->GetActorLocation()); 
+				if (!OutEdge->Node->bIsVisited && (OutEdge->Node->VWeight == -1.f || NewWeight < OutEdge->EWeight))
 				{
 					OutEdge->Node->VWeight = NewWeight;
 

@@ -18,7 +18,10 @@ public:
 	void GenerateGraph(bool bIncludeOnlyTargets);
 
 	UFUNCTION(BlueprintCallable)
-		TArray<AActor*> GetTargets();
+	TArray<AActor*> GetTargets();
+
+	UFUNCTION(BlueprintCallable)
+	AActor* GetCoin(AActor* Start);
 
 	UPROPERTY()
 	TArray<class ACoin*> CoinsToCollect;
