@@ -11,12 +11,9 @@ class NAVMESHOVERRIDE_API ACoin : public AActor
 {
 	GENERATED_BODY()
 	
-private:
-	UMaterialInterface* TempMaterial;
-	bool bWasTarget;
-public:	
+public:
 	// Sets default values for this actor's properties
-	ACoin();
+	ACoin(const FObjectInitializer& ObjectInitializer);
 
 	UPROPERTY(VisibleAnywhere, Category = "Mesh")
 	USceneComponent* SceneComponent;
@@ -28,10 +25,16 @@ public:
 	UStaticMeshComponent* MeshComponent;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Mesh")
+	UMaterialInterface* DefaultMaterial;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Mesh")
 	UMaterialInterface* TargetMaterial;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Graph")
-	bool bIsTarget;
+	bool bIsTarget = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Graph")
+	float Price = 1.f;
 
 protected:
 	// Called when the game starts or when spawned

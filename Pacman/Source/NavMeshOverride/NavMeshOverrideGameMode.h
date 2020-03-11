@@ -14,12 +14,17 @@ class ANavMeshOverrideGameMode : public AGameModeBase
 public:
 	ANavMeshOverrideGameMode();
 	
+	UFUNCTION(BlueprintCallable)
+	void GenerateGraph(bool bIncludeOnlyTargets);
+
+	UFUNCTION(BlueprintCallable)
+		TArray<AActor*> GetTargets();
+
 	UPROPERTY()
 	TArray<class ACoin*> CoinsToCollect;
 
-	class UGraph* GenerateGraphFromLevel();
-
-	AActor* GetTarget();
+	UPROPERTY()
+	class AGraph* Graph;
 
 protected:
 	virtual void BeginPlay() override;

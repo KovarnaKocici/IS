@@ -17,8 +17,6 @@ APacman::APacman()
 	GetMovementComponent()->bConstrainToPlane = true;
 	GetMovementComponent()->bSnapToPlaneAtStart = true;
 
-	//GetMovementComponent()->bOrientRotationToMovement = true;
-	//GetMovementComponent()->RotationRate = FRotator(0.f, 640.f, 0.f);
 }
 
 // Called when the game starts or when spawned
@@ -34,7 +32,7 @@ void APacman::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	// Apply change in rotation 
 
-	if (bLookAtMovement)
+	if (bOrientRotationToMovement)
 	{
 		FVector velocity = (GetVelocity());
 		velocity.Normalize();

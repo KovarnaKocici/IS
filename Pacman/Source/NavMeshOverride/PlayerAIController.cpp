@@ -18,13 +18,6 @@
 void APlayerAIController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
-	//if (Targets.Num())
-	//{
-	//	SetNewMoveDestination(Targets[0]->GetActorLocation());
-
-	//}
-
 }
 
 void APlayerAIController::Possess(APawn* InPawn)
@@ -46,43 +39,59 @@ void APlayerAIController::SetNewMoveDestination(const FVector DestLocation)
 	}
 }
 
+void APlayerAIController::RunPathfinder(EPathfinderEnum Method)
+{
+	ANavMeshOverrideGameMode* GM = Cast<ANavMeshOverrideGameMode>(GetWorld()->GetAuthGameMode());
+	if (!GM || !GM->CoinsToCollect.Num())
+	{
+		return;
+	}
+
+	TArray<AActor*> Graphs;
+	TSubclassOf<AGraph> classToFind;
+	classToFind = AGraph::StaticClass();
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), classToFind, Graphs);
+
+	if (Graphs.Num())
+	{
+		AGraph* G = Cast<AGraph>(Graphs[0]);
+
+		if (GetPawn() && GM->GetTargets().Num())
+		{
+			switch (Method)
+			{
+			case EPathfinderEnum::PE_BFS:
+				Targets = G->BFS(GetPawn(), GM->GetTargets()[0]);
+				break;
+			case EPathfinderEnum::PE_DFS:
+				Targets = G->DFS(GetPawn(), GM->GetTargets()[0]);
+				break;
+			case EPathfinderEnum::PE_Dijkstra:
+				Targets = G->Dijkstra(GetPawn(), GM->GetTargets()[0]);
+				break;
+			case EPathfinderEnum::PE_AStar:
+				Targets = G->Dijkstra(GetPawn(), GM->GetTargets()[0]);
+				break;
+			default:
+				break;
+			}
+		}
+	}
+}
+
 void APlayerAIController::RunDijkstra()
 {
-
+	RunPathfinder(EPathfinderEnum::PE_Dijkstra);
 }
 
 void APlayerAIController::RunBFS()
 {
-	ANavMeshOverrideGameMode* GM = Cast<ANavMeshOverrideGameMode>(GetWorld()->GetAuthGameMode());
-	if (!GM || !GM->CoinsToCollect.Num())
-	{
-		return;
-	}
-
-	UGraph* G = GM->GenerateGraphFromLevel();
-
-	if (GetPawn() && GM->GetTarget())
-	{
-		Targets = G->BFS(GetPawn(), GM->GetTarget());
-	}
-
+	RunPathfinder(EPathfinderEnum::PE_BFS);
 }
 
 void APlayerAIController::RunDFS()
 {
-	ANavMeshOverrideGameMode* GM = Cast<ANavMeshOverrideGameMode>(GetWorld()->GetAuthGameMode());
-	if (!GM || !GM->CoinsToCollect.Num())
-	{
-		return;
-	}
-
-
-	UGraph* G = GM->GenerateGraphFromLevel();
-
-	if (GetPawn() && GM->GetTarget())
-	{
-		Targets = G->DFS(GetPawn(), GM->GetTarget());
-	}
+	RunPathfinder(EPathfinderEnum::PE_DFS);
 }
 
 void APlayerAIController::BeginPlay()

@@ -7,6 +7,15 @@
 #include "Coin.h"
 #include "PlayerAIController.generated.h"
 
+UENUM()
+enum class EPathfinderEnum : uint8
+{
+	PE_BFS UMETA(DisplayName = "BFS"),
+	PE_DFS UMETA(DisplayName = "DFS"),
+	PE_Dijkstra UMETA(DisplayName = "Dijkstra"),
+	PE_AStar UMETA(DisplayName = "AStar")
+};
+
 UCLASS()
 class NAVMESHOVERRIDE_API APlayerAIController : public AAIController
 {
@@ -24,16 +33,14 @@ public:
 	void SetNewMoveDestination(const FVector DestLocation);
 
 	UFUNCTION(BlueprintCallable)
-	void RunDijkstra();
-
-	UFUNCTION(BlueprintCallable)
-	void RunBFS();
-
-	UFUNCTION(BlueprintCallable)
-	void RunDFS();
+	void RunPathfinder(EPathfinderEnum Method);
 
 private:
 	TArray<float> Path;
+
+	void RunDijkstra();
+	void RunBFS();
+	void RunDFS();
 
 protected:
 	virtual void BeginPlay() override;

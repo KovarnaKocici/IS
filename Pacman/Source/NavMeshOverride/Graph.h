@@ -15,8 +15,8 @@ struct NAVMESHOVERRIDE_API FGEdge
 {
 	GENERATED_BODY()
 
-	FGNode* Connection = nullptr;
-	float Weight = 1.f;
+	FGNode* Node = nullptr;
+	float EWeight = 0.f;
 };
 
 USTRUCT()
@@ -25,23 +25,26 @@ struct NAVMESHOVERRIDE_API FGNode
 	GENERATED_BODY()
 
 	UPROPERTY()
-	bool bIsVisited = false;;
+	bool bIsVisited = false;
 
 	UPROPERTY()
 	AActor* Vertex = nullptr;
 
+	float VWeight = -1.f;
 	FGNode* CameFrom = nullptr;
 	TArray<FGEdge*> ConnectedNodes;
 };
 
+
 UCLASS()
-class NAVMESHOVERRIDE_API UGraph : public UObject
+class NAVMESHOVERRIDE_API AGraph : public AActor
 {
 	GENERATED_BODY()
 	
 public:
-	virtual UWorld* GetWorld() const override;
-
+	AGraph(const FObjectInitializer& ObjectInitializer);
+	void GenerateGraphFromLevel(bool bIncludeOnlyTargets = false);
+	FGEdge* GetEdge(FGNode* From, FGNode* To);
 	TArray<FGNode*> GetRelations() { return Nodes; }
 	TArray<FGNode> GetNotVisitedNodes(const FGNode* Node) const;
 	//If Vertex is in Graph return its reference, if not - add it at first
@@ -55,12 +58,12 @@ public:
 
 	UFUNCTION()
 	void DrawEdges(const FGNode From, const TArray<FGNode> To) const;
-
 	void PrintPath(const TArray<FGNode*> Path) const;
 
-	TArray<AActor*> Dijkstra(AActor* Start);
 	TArray<AActor*> DFS(AActor* Start, AActor* End);
 	TArray<AActor*> BFS(AActor* Start, AActor* End);
+	TArray<AActor*> Dijkstra(AActor* Start, AActor* End);
+	TArray<AActor*> AStar(AActor* Start, AActor* End);
 
 protected: 
 	TArray<FGNode*> Nodes;

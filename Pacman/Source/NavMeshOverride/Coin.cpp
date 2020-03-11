@@ -12,7 +12,7 @@
 #pragma optimize( "", off)
 
 // Sets default values
-ACoin::ACoin()
+ACoin::ACoin(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -26,8 +26,8 @@ ACoin::ACoin()
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
 	MeshComponent->SetupAttachment(CollisionComponent);
 
-	bIsTarget = false;
-	bWasTarget = false;
+	//DefaultMaterial = CreateDefaultSubobject<UMaterialInterface>(TEXT("DefaultMaterialComponent"));
+	//TargetMaterial = CreateDefaultSubobject<UMaterialInterface>(TEXT("TargetMaterialComponent"));
 
 }
 
@@ -51,15 +51,13 @@ void ACoin::NotifyActorBeginOverlap(AActor* OtherActor)
 
 void ACoin::OnConstruction(const FTransform& Transform)
 {
-	if (!bWasTarget && bIsTarget)
+	if (bIsTarget)
 	{
-		TempMaterial = MeshComponent->GetMaterial(0);
 		MeshComponent->SetMaterial(0, TargetMaterial);
-		bWasTarget = true;
 	}
-	else if(bWasTarget && !bIsTarget)
+	else
 	{
-		MeshComponent->SetMaterial(0, TempMaterial);
-		bWasTarget = false;
+		MeshComponent->SetMaterial(0, DefaultMaterial);
 	}
+
 }
