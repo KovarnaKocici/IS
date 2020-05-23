@@ -5,17 +5,17 @@
 #include "CoreMinimal.h"
 #include "PlayerAIController.h"
 #include "BaseAIUnit.h"
-#include "Pacman.generated.h"
+#include "Ghost.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class NAVMESHOVERRIDE_API APacman : public ABaseAIUnit
+class NAVMESHOVERRIDE_API AGhost : public ABaseAIUnit
 {
 	GENERATED_BODY()
 	
 	public:
-	APacman(const FObjectInitializer& ObjectInitializer);
-
+	AGhost(const FObjectInitializer& ObjectInitializer);
+	
 };

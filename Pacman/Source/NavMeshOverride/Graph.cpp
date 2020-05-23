@@ -19,69 +19,13 @@ AGraph::AGraph(const FObjectInitializer& ObjectInitializer): Super(ObjectInitial
 {
 }
 
-void AGraph::GenerateGraphFromLevel(bool bIncludeOnlyTargets)
-{
-	ANavMeshOverrideGameMode* GM = Cast<ANavMeshOverrideGameMode>(GetWorld()->GetAuthGameMode());
-	if (!GM || !GM->CoinsToCollect.Num())
-	{
-		return;
-	}
-
-	if (GM->CoinsToCollect.Num())
-	{
-		UE_LOG(LogTemp, Error, TEXT("Was found %i actors"), GM->CoinsToCollect.Num());
-	}
-
-	//Initialize Graph
-	TArray<AActor*> Vertexes;
-
-	for (auto Coin : GM->CoinsToCollect)
-	{
-		if (Coin->bIsTarget && bIncludeOnlyTargets)
-		{
-			Vertexes.Add(Cast<AActor>(Coin));
-			AddNode(Vertexes.Last(0));
-		}
-		else if (!bIncludeOnlyTargets)
-		{
-			Vertexes.Add(Cast<AActor>(Coin));
-			AddNode(Vertexes.Last(0));
-		}
-	}
-
-
-	TArray<AActor*> NearestCoins;
-
-	for (auto ActorL : Vertexes)
-	{
-		if (bIncludeOnlyTargets)
-		{
-			NearestCoins = Vertexes;
-		}
-		else
-		{
-			ActorL->GetOverlappingActors(NearestCoins, ACoin::StaticClass());
-		}
-
-		for (auto ActorR : NearestCoins)
-		{
-			if (ActorL != ActorR /*&& FMath::RandRange(0.f, 1.f) < GraphDensity*/)
-			{
-				AddRelation(ActorL, ActorR);
-				AddRelation(ActorR, ActorL);
-				DrawDebugLine(GetWorld(), ActorL->GetActorLocation(), ActorR->GetActorLocation(), FColor::White, true, 0.f);
-			}
-		}
-	}
-}
-
 FGEdge* AGraph::GetEdge(FGNode* From, FGNode* To)
 {
 	FGEdge* TEdge = nullptr;
 
 	for (auto Edge : From->ConnectedNodes)
 	{
-		if (Edge->Node == To)
+		if (Edge->TargetNode == To)
 		{
 			TEdge = Edge;
 			break;
@@ -95,15 +39,30 @@ TArray<FGNode> AGraph::GetNotVisitedNodes(const FGNode* Node) const
 
 	TArray<FGNode> NotVisited;
 
-	for (auto ConnectedNode : Node->ConnectedNodes)
+	for (const auto &ConnectedNode : Node->ConnectedNodes)
 	{
-		if (!ConnectedNode->Node->bIsVisited)
+		if (!ConnectedNode->TargetNode->bIsVisited)
 		{
-			NotVisited.Add(*(ConnectedNode->Node));
+			NotVisited.Add(*(ConnectedNode->TargetNode));
 		}
 	}
 
 	return NotVisited;
+}
+
+int AGraph::GetNumNotVisitedNodes() const
+{
+	int Num = 0;
+
+	for (auto const &Node: Nodes)
+	{
+		if (!Node->bIsVisited)
+		{
+			++Num;
+		}
+	}
+
+	return Num;
 }
 
 FGNode* AGraph::AddNode(AActor* Vertex)
@@ -143,13 +102,21 @@ void AGraph::AddRelation(FGNode* NodeL, FGNode* NodeR)
 			DrawDebugString(GetWorld(), FVector(Location.X, Location.Y, NodeR->Vertex->GetActorLocation().Z), FString::SanitizeFloat(Price), nullptr, FColor::Red, -1.f, true);
 		}
 	}
-	//UNavigationSystem* const NavSys = GetWorld()->GetNavigationSystem();
-	//if (NavSys)
-	//{
-	//	NavSys->GetPathLength(NodeL->Vertex->GetActorLocation(), NodeR->Vertex->GetActorLocation(), Distance);
-	//}
 
 	NodeL->ConnectedNodes.AddUnique(new FGEdge{ NodeR, Price });
+}
+
+bool AGraph::HasRelation(FGNode* NodeL, FGNode* NodeR)
+{
+	for (const auto &Edge : NodeL->ConnectedNodes)
+	{
+		if (Edge->TargetNode == NodeR)
+		{
+			return true;
+		}
+	}
+	return false;
+
 }
 
 void AGraph::Visit(FGNode* Parent, FGNode* Child)
@@ -203,19 +170,29 @@ TArray<AActor*> AGraph::BacktrackPath(FGNode* Node)
 	return Path;
 }
 
-void AGraph::DrawGraphDebug(const FGNode* CurrentNode, const int& index) 
+void AGraph::ResetVisitedNodes()
 {
-	DrawDebugString(GetWorld(), CurrentNode->Vertex->GetActorLocation(), FString::Printf(TEXT("%i"), index), nullptr, FColor::White, -1.f, true);
+	for (auto &Node : Nodes)
+	{
+		Node->bIsVisited = false;
+		Node->CameFrom = nullptr;
+		//Node->VWeight = 0.0f;
+	}
+}
+
+void AGraph::DrawGraphDebug(const FGNode* CurrentNode, const int& index, float Time = -1.f) 
+{
+	DrawDebugString(GetWorld(), CurrentNode->Vertex->GetActorLocation(), FString::Printf(TEXT("%i"), index), nullptr, FColor::White, Time, true);
 
 	FTimerHandle DrawTimerHandle;
 	FTimerDelegate DrawTimerDelegate;
 
-	DrawTimerDelegate.BindUFunction(this, FName(TEXT("DrawEdges")), *CurrentNode, GetNotVisitedNodes(CurrentNode));
+	DrawTimerDelegate.BindUFunction(this, FName(TEXT("DrawEdges")), *CurrentNode, GetNotVisitedNodes(CurrentNode), Time);
 	GetWorld()->GetTimerManager().SetTimer(DrawTimerHandle, DrawTimerDelegate, DelayTime, false);
 	DelayTime += DeltaTime;
 }
 
-void AGraph::DrawEdges(const FGNode From, const TArray<FGNode> To) const
+void AGraph::DrawEdges(const FGNode From, const TArray<FGNode> To, float Time) const
 {
 	if (!To.Num())
 	{
@@ -231,7 +208,7 @@ void AGraph::DrawEdges(const FGNode From, const TArray<FGNode> To) const
 
 	for (auto Node : To)
 	{
-		DrawDebugLine(GetWorld(), From.Vertex->GetActorLocation(), Node.Vertex->GetActorLocation(), LayerColor, true, 0.f);
+		DrawDebugLine(GetWorld(), From.Vertex->GetActorLocation(), Node.Vertex->GetActorLocation(), LayerColor, true, Time);
 	}
 }
 
@@ -279,10 +256,10 @@ TArray<AActor*> AGraph::BFS( AActor* Start, AActor* End)
 		{
 			for (auto &OutEdge : CurrentNode->ConnectedNodes)
 			{
-				if (!OutEdge->Node->bIsVisited)
+				if (!OutEdge->TargetNode->bIsVisited)
 				{
-					Visit(CurrentNode, OutEdge->Node);
-					Queue.Add(OutEdge->Node);
+					Visit(CurrentNode, OutEdge->TargetNode);
+					Queue.Add(OutEdge->TargetNode);
 				}
 			}
 		}
@@ -327,12 +304,12 @@ TArray<AActor*> AGraph::DFS(AActor* Start, AActor* End)
 		{
 			for (auto &OutEdge : CurrentNode->ConnectedNodes)
 			{
-				if (!OutEdge->Node->bIsVisited)
+				if (!OutEdge->TargetNode->bIsVisited)
 				{
-					Visit(CurrentNode, OutEdge->Node);
+					Visit(CurrentNode, OutEdge->TargetNode);
 
-					Stack.Add(OutEdge->Node);
-					FullPath.Add(OutEdge->Node);
+					Stack.Add(OutEdge->TargetNode);
+					FullPath.Add(OutEdge->TargetNode);
 				}
 			}
 		}
@@ -377,16 +354,16 @@ TArray<AActor*> AGraph::Dijkstra(AActor* Start, AActor* End)
 			int NewWeight = 0.f;
 			for (auto &OutEdge : CurrentNode->ConnectedNodes)
 			{
-				NewWeight = CurrentNode->VWeight + GetEdge(CurrentNode, OutEdge->Node)->EWeight;
-				if (!OutEdge->Node->bIsVisited && (OutEdge->Node->VWeight == -1.f || NewWeight < OutEdge->EWeight))
+				NewWeight = CurrentNode->VWeight + GetEdge(CurrentNode, OutEdge->TargetNode)->EWeight;
+				if (!OutEdge->TargetNode->bIsVisited && (OutEdge->TargetNode->VWeight == -1.f || NewWeight < OutEdge->EWeight))
 				{
-					OutEdge->Node->VWeight = NewWeight;
+					OutEdge->TargetNode->VWeight = NewWeight;
 
 					//Add to Queue by priority large->low
 					if (!PriorityQueue.Num())
 					{
-						PriorityQueue.Add(OutEdge->Node);
-						Visit(CurrentNode, OutEdge->Node);
+						PriorityQueue.Add(OutEdge->TargetNode);
+						Visit(CurrentNode, OutEdge->TargetNode);
 					}
 					else
 					{
@@ -394,14 +371,14 @@ TArray<AActor*> AGraph::Dijkstra(AActor* Start, AActor* End)
 						{
 							if (NewWeight <= PriorityQueue[i]->VWeight)
 							{
-								PriorityQueue.Insert(OutEdge->Node, i);
-								Visit(CurrentNode, OutEdge->Node);
+								PriorityQueue.Insert(OutEdge->TargetNode, i);
+								Visit(CurrentNode, OutEdge->TargetNode);
 								break;
 							}
 							if (i == PriorityQueue.Num() - 1 && NewWeight > PriorityQueue[i]->VWeight)
 							{
-								PriorityQueue.Add(OutEdge->Node);
-								Visit(CurrentNode, OutEdge->Node);
+								PriorityQueue.Add(OutEdge->TargetNode);
+								Visit(CurrentNode, OutEdge->TargetNode);
 							}
 						}
 					}
@@ -455,15 +432,15 @@ TArray<AActor*> AGraph::AStar(AActor* Start, AActor* End)
 			for (auto &OutEdge : CurrentNode->ConnectedNodes)
 			{
 				NewWeight = Heuristic(CurrentNode->Vertex->GetActorLocation(), End->GetActorLocation()); 
-				if (!OutEdge->Node->bIsVisited && (OutEdge->Node->VWeight == -1.f || NewWeight < OutEdge->EWeight))
+				if (!OutEdge->TargetNode->bIsVisited && (OutEdge->TargetNode->VWeight == -1.f || NewWeight < OutEdge->EWeight))
 				{
-					OutEdge->Node->VWeight = NewWeight;
+					OutEdge->TargetNode->VWeight = NewWeight;
 
 					//Add to Queue by priority large->low
 					if (!PriorityQueue.Num())
 					{
-						PriorityQueue.Add(OutEdge->Node);
-						Visit(CurrentNode, OutEdge->Node);
+						PriorityQueue.Add(OutEdge->TargetNode);
+						Visit(CurrentNode, OutEdge->TargetNode);
 					}
 					else
 					{
@@ -471,14 +448,14 @@ TArray<AActor*> AGraph::AStar(AActor* Start, AActor* End)
 						{
 							if (NewWeight <= PriorityQueue[i]->VWeight)
 							{
-								PriorityQueue.Insert(OutEdge->Node, i);
-								Visit(CurrentNode, OutEdge->Node);
+								PriorityQueue.Insert(OutEdge->TargetNode, i);
+								Visit(CurrentNode, OutEdge->TargetNode);
 								break;
 							}
 							if (i == PriorityQueue.Num() - 1 && NewWeight > PriorityQueue[i]->VWeight)
 							{
-								PriorityQueue.Add(OutEdge->Node);
-								Visit(CurrentNode, OutEdge->Node);
+								PriorityQueue.Add(OutEdge->TargetNode);
+								Visit(CurrentNode, OutEdge->TargetNode);
 							}
 						}
 					}
@@ -491,4 +468,58 @@ TArray<AActor*> AGraph::AStar(AActor* Start, AActor* End)
 	PrintPath(FullPath);
 
 	return BacktrackPath(FullPath.Last());
+}
+
+TArray<TArray<AActor*>> AGraph::GetAllPathsOfLength(AActor* Start, int SearchDepth)
+{
+	TArray<TArray<AActor*>> Paths;
+	TArray<FGNode*> Stack;
+	FGNode* CurrentNode = GetNodeByVertex(Start);
+
+	if (!Start || !CurrentNode)
+	{
+		return TArray<TArray<AActor*>>();
+	}
+
+	Visit(nullptr, CurrentNode);
+	CurrentNode->VWeight = 0;
+	Stack.Add(CurrentNode);
+
+	int CurrentDepth = 0; //including Start
+	int i = 0;
+	while (Stack.Num())
+	{
+
+		CurrentNode = Stack.Last(0);
+		Stack.RemoveAt(Stack.Num() - 1);
+
+		DrawGraphDebug(CurrentNode, CurrentDepth, 1.f);
+
+		if (CurrentNode->VWeight == SearchDepth || !GetNotVisitedNodes(CurrentNode).Num())
+		{
+			Paths.Add(TArray<AActor*>(BacktrackPath(CurrentNode)));
+		}
+		else
+		{
+			if (CurrentNode->ConnectedNodes.Num())
+			{
+				CurrentDepth = CurrentNode->VWeight + 1;
+
+				for (auto &OutEdge : CurrentNode->ConnectedNodes)
+				{
+					if (!OutEdge->TargetNode->bIsVisited)
+					{
+						Visit(CurrentNode, OutEdge->TargetNode);
+						OutEdge->TargetNode->VWeight = CurrentDepth; 
+						Stack.Add(OutEdge->TargetNode);
+					}
+				}
+			}
+		}
+		i++;
+	}
+
+	ResetVisitedNodes();
+	return Paths;
+
 }

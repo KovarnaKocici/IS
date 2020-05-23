@@ -6,6 +6,7 @@
 #include "GameFramework/GameModeBase.h"
 #include "NavMeshOverrideGameMode.generated.h"
 
+
 UCLASS(minimalapi)
 class ANavMeshOverrideGameMode : public AGameModeBase
 {
@@ -15,25 +16,29 @@ public:
 	ANavMeshOverrideGameMode();
 	
 	UFUNCTION(BlueprintCallable)
-	void GenerateGraph(bool bIncludeOnlyTargets);
+	void GenerateGraph();
 
 	UFUNCTION(BlueprintCallable)
 	TArray<AActor*> GetTargets();
 
 	UFUNCTION(BlueprintCallable)
-	AActor* GetCoin(AActor* Start);
+	AActor* GetCoin(AActor* OnActor);
+
+	//Including OnActor itself
+	UFUNCTION(BlueprintCallable)
+	TArray<AActor*> GetAllUnits(AActor* OnActor);
 
 	UPROPERTY()
 	TArray<class ACoin*> CoinsToCollect;
 
 	UPROPERTY()
-	class AGraph* Graph;
+	class AGraphGenerator* GraphGenerator;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	int Score = 0;
 
 protected:
 	virtual void BeginPlay() override;
-
-	UPROPERTY( BlueprintReadWrite, /*, meta = (UIMin = '0.0', UIMax = '1.0'),*/ Category = "Graph")
-	float GraphDensity = 0.5f;
 
 	//UPROPERTY(BlueprintReadWrite, /*, meta = (UIMin = '0.0', UIMax = '1.0'),*/ Category = "Graph")
 	//float GraphDrawSpeed = 1.f;

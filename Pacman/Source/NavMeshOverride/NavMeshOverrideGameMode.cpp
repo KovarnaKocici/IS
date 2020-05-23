@@ -8,7 +8,9 @@
 #include "PlayerAIController.h"
 #include "DrawDebugHelpers.h"
 #include "Pacman.h"
+#include "GraphGenerator.h"
 #include "Array.h"
+#include "BaseAIUnit.h"
 
 #pragma optimize("", off)
 
@@ -17,16 +19,27 @@ ANavMeshOverrideGameMode::ANavMeshOverrideGameMode()
 }
 
 
-void ANavMeshOverrideGameMode::GenerateGraph(bool bIncludeOnlyTargets)
+void ANavMeshOverrideGameMode::GenerateGraph()
 {
-	//Find targets for Pacman
 	TArray<AActor*> ActorsToFind;
-	//Create Graph from found targets
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AGraph::StaticClass(), ActorsToFind);
-	Graph = Cast<AGraph>(ActorsToFind[0]);
-	if (Graph)
-	{
-		Graph->GenerateGraphFromLevel(bIncludeOnlyTargets);
+	//Find GraphGenerator
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AGraphGenerator::StaticClass(), ActorsToFind);
+	if (ActorsToFind.Num()) {
+		GraphGenerator = Cast<AGraphGenerator>(ActorsToFind[0]);
+		if (GraphGenerator)
+		{
+			switch (GraphGenerator->Type)
+			{
+			case EGraphGenerator::GGE_Default:
+				GraphGenerator->GenerateGraphFromLevel();
+				break;
+			case EGraphGenerator::GGE_Maze:
+				GraphGenerator->GenerateGraphMaze();
+				break;
+			default:
+				break;
+			}
+		}
 	}
 }
 
@@ -45,11 +58,27 @@ TArray<AActor*> ANavMeshOverrideGameMode::GetTargets()
 }
 
 
-AActor* ANavMeshOverrideGameMode::GetCoin(AActor* Start)
+AActor* ANavMeshOverrideGameMode::GetCoin(AActor* OnActor)
 {	
 	TArray<AActor*> OverlappingCoins;
-	Start->GetOverlappingActors(OverlappingCoins, ACoin::StaticClass());
+	OnActor->GetOverlappingActors(OverlappingCoins, ACoin::StaticClass());
 	return OverlappingCoins.Num()? OverlappingCoins[0]: nullptr;
+}
+
+TArray<AActor*> ANavMeshOverrideGameMode::GetAllUnits(AActor* OnActor)
+{
+	TArray<AActor*> Res;
+	Res.Add(OnActor);
+	TArray<AActor*> OverlappingUnits;
+	OnActor->GetOverlappingActors(OverlappingUnits, AActor::StaticClass());
+	for(auto const& Actor: OverlappingUnits)
+	{
+		if(Cast<ABaseAIUnit>(Actor))
+		{
+			Res.Add(Actor);
+		}
+	}
+	return Res;
 }
 
 void ANavMeshOverrideGameMode::BeginPlay()
@@ -63,4 +92,6 @@ void ANavMeshOverrideGameMode::BeginPlay()
 	{
 		CoinsToCollect.Add(Cast<ACoin>(Coin));
 	}
+
+	GenerateGraph();
 }

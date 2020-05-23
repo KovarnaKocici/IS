@@ -11,7 +11,7 @@ class Schedule:
     n_groups = 3
     n_rooms = 5
     n_subjects = 6
-    n_s_per_t = 3 
+    n_s_per_t = 5 
     n_s_per_g = 3 
 
     def __init__(self, g_names, s_names, t_names, week_days):
@@ -80,6 +80,11 @@ class Schedule:
         self.tpl[l][g] = t
         self.rpl[l][g] = r
         self.spl[l][g] = s
+        
+    def clear(self):
+        self.rpl = [[None] * self.n_groups for _ in range(self.total_lessons)]
+        self.spl = [[None] * self.n_groups for _ in range(self.total_lessons)]
+        self.tpl = [[None] * self.n_groups for _ in range(self.total_lessons)]
 
     def select_unassigned_var(self):
         for l in range(self.total_lessons):
@@ -177,23 +182,26 @@ class Schedule:
         return len(subjects_to_remove) > 0
 
     def backtracking(self):
-        var = self.select_unassigned_var()  # self.mrv()  # self.degree_heuristic()  # 
+        if self.cnt > 1e3:
+            self.clear()
+            self.cnt = 0
+        
+        var = self.degree_heuristic() # self.mrv()  #  self.select_unassigned_var() # 
 
         if var is None:
             return True
 
         l, g = var
 
-        for t, r, s in self.order_domain_vals(g):  # self.forward_check(l, g): # self.lcv(g): #self.forward_check(l, g):
+        for t, r, s in self.forward_check(l, g): # self.lcv(g): #self.forward_check(l, g): self.order_domain_vals(g):  # 
             self.setter(l, g, t, r, s)
 
             if self.check_constraints():
-                # if self.cnt == 1e6:
-                #     return True
                 res = self.backtracking()
                 if res:
                     return True
             self.setter(l, g, None, None, None)
+
         return False
 
     def print(self):

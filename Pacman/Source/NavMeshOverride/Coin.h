@@ -30,8 +30,11 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Mesh")
 	UMaterialInterface* TargetMaterial;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Graph")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Game")
 	bool bIsTarget = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Game")
+	bool bIsActive = true;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Graph")
 	float Price = 1.f;
